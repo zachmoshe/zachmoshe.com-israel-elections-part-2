@@ -63,6 +63,7 @@ def main():
 	print("Starting the algorithm")
 	pop, logbook = algorithms.eaSimple(pop, toolbox, cxpb=0.5, mutpb=0.1, ngen=10, stats=stats, halloffame=hof, verbose=True)
 
+	pickle.dump({ "pop": pop, "logbook": logbook, "hof": hof }, open('results.pickle', 'wb'))
 
 
 
