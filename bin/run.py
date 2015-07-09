@@ -42,7 +42,7 @@ def main():
 	toolbox.register("individual", tools.initRepeat, creator.Individual, toolbox.rand_bit, n=X.shape[0])
 	toolbox.register("population", tools.initRepeat, list, toolbox.individual, n=MU)
 
-	toolbox.register("evaluate", evalAssignment, X=X)
+	toolbox.register("evaluate", evalAssignment, X=X, num_clusters=NUM_CLUSTERS)
 	toolbox.register("mate", mateAssignments, X=X, num_clusters=NUM_CLUSTERS)
 	toolbox.register("mutate", mutateAssignment, indpb=0.05, num_clusters=NUM_CLUSTERS)
 	toolbox.register("select", tools.selTournament, tournsize=3)
@@ -54,25 +54,26 @@ def main():
 		
 	hof = tools.HallOfFame(1)
 
-
-	print("Starting the algorithm")
-	pop, logbook = algorithms.eaSimple(pop, toolbox, cxpb=0.5, mutpb=0.1, ngen=10, stats=stats, halloffame=hof, verbose=True)
-
-
 	stats = tools.Statistics(lambda ind: ind.fitness.values)
 	stats.register("avg", np.mean)
 	stats.register("min", np.min)
 	stats.register("max", np.max)
 		
+
+	print("Starting the algorithm")
+	pop, logbook = algorithms.eaSimple(pop, toolbox, cxpb=0.75, mutpb=0.1, ngen=5, stats=stats, halloffame=hof, verbose=True)
+
+	pickle.dump({ "pop": pop, "logbook": logbook, "hof": hof }, open('results.pickle', 'wb'))
+
 	
 
 # DEAP functions
 
-def evalAssignment(assignment, X):
+def evalAssignment(assignment, X, num_clusters):
 	# needs X
 	x = X.copy()
 	x['cluster_id'] = list(assignment)
-	return (weighted_avg_std(x), )
+	return (weighted_avg_std(x, num_clusters), )
 
 def calculate_connections(rows):
 	rows = rows.copy()

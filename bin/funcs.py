@@ -51,6 +51,12 @@ def weighted_avg_std(X, num_clusters):
     else:
         return weighted_std
 
+    sizes = X.groupby("cluster_id").size()
+    if (sizes<1/num_clusters/2).any():
+        return 9999999999999 # a lot
+    else:
+        return weighted_std
+
 def pct_neig_same_cluster(X):
     K = int(max(10, len(X)*0.01))
     cross = calculate_cross(X)
@@ -59,3 +65,6 @@ def pct_neig_same_cluster(X):
     )
     pct_same_cluster_neighbors.name = "pct_same_cluster"
     return pct_same_cluster_neighbors
+
+
+
