@@ -37,12 +37,19 @@ def calc_cluster_weighted_avg_std(X, pct_neig_same_cluster):
     tot = sum( punishment_factor(X.pct_neig_same_cluster) * (X.score - mean)**2 )
     return math.sqrt(tot/(len(X)-1))
 
-def weighted_avg_std(X):
+def weighted_avg_std(X, num_clusters):
     pct_neig_same_cluster_x = pct_neig_same_cluster(X)
     
-    return X.groupby("cluster_id").apply(
+    weighted_std = X.groupby("cluster_id").apply(
         lambda rows: calc_cluster_weighted_avg_std(rows, pct_neig_same_cluster_x)
     ).mean()
+    
+    sizes = X.groupby("cluster_id").size()
+    
+    if sum(sizes >= 1/num_clusters/2) < num_clusters:
+        return 99999999 # a lot.
+    else:
+        return weighted_std
 
 def pct_neig_same_cluster(X):
     K = int(max(10, len(X)*0.01))
