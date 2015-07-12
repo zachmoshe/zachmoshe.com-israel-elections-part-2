@@ -37,7 +37,7 @@ def main():
 	toolbox = base.Toolbox()
 	
 	pool = multiprocessing.Pool()
-	#toolbox.register("map", pool.map)
+	toolbox.register("map", pool.map)
 	
 	toolbox.register("rand_bit", random.randint, 0, NUM_CLUSTERS)
 	toolbox.register("individual", tools.initRepeat, creator.Individual, toolbox.rand_bit, n=X.shape[0])
@@ -45,7 +45,7 @@ def main():
 
 	toolbox.register("evaluate", evalAssignment, X=X, num_clusters=NUM_CLUSTERS)
 	toolbox.register("mate", mateAssignments, X=X, num_clusters=NUM_CLUSTERS)
-	toolbox.register("mutate", mutateAssignment, indpb=0.05, num_clusters=NUM_CLUSTERS)
+	toolbox.register("mutate", mutateAssignment, indpb=0.15, num_clusters=NUM_CLUSTERS)
 	toolbox.register("select", tools.selTournament, tournsize=3)
 
 
@@ -53,12 +53,14 @@ def main():
 	print("generating population...")
 	pop = toolbox.population()
 		
-	hof = tools.HallOfFame(1)
+	hof = tools.HallOfFame(10)
 
 	stats = tools.Statistics(lambda ind: ind.fitness.values)
 	stats.register("avg", np.mean)
 	stats.register("min", np.min)
 	stats.register("max", np.max)
+	stats.register("list", list)
+	stats.register("num_uniq", lambda pop: len(set([ str(x) for x in pop])) )
 		
 
 	print("Starting the algorithm")
@@ -72,9 +74,9 @@ def main():
 	population = pop
 	mu=MU
 	lambda_=LAMBDA
-	cxpb = 0.8
-	mutpb = 0.2
-	ngen=5
+	cxpb = 0.9
+	mutpb = 0.1
+	ngen=100
 	halloffame = hof
 	verbose = True
 
