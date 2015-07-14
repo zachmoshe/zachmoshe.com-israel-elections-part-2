@@ -24,7 +24,12 @@ RESULTS_LATLONG = pickle.load(open(LAT_LONG_RESULTS_FILENAME, "rb"))
 NUM_CLUSTERS = 8
 X = RESULTS_LATLONG[-1]["X"]
 
-X = X[:50]
+X = X[:500]
+
+# init with KMeans
+km = sklearn.cluster.KMeans(n_clusters=NUM_CLUSTERS)
+kmeans_ind = km.fit_predict(X)
+
 
 MU = 100
 LAMBDA = 50
@@ -45,14 +50,16 @@ def main():
 
 	toolbox.register("evaluate", evalAssignment, X=X, num_clusters=NUM_CLUSTERS)
 	toolbox.register("mate", mateAssignments, X=X, num_clusters=NUM_CLUSTERS)
-	toolbox.register("mutate", mutateAssignment, indpb=0.15, num_clusters=NUM_CLUSTERS)
+	toolbox.register("mutate", mutateAssignment, indpb=0.05, num_clusters=NUM_CLUSTERS)
 	toolbox.register("select", tools.selTournament, tournsize=3)
 
 
 	# Run the algorithm
 	print("generating population...")
-	pop = toolbox.population()
-		
+	#pop = toolbox.population()
+	pop = [ creator.Individual(kmeans_ind) ] * (MU-1)
+	pop = [ creator.Individual(kmeans_ind) ] + [ toolbox.mutate(toolbox.clone(ind))[0] for ind in pop ]
+
 	hof = tools.HallOfFame(10)
 
 	stats = tools.Statistics(lambda ind: ind.fitness.values)
@@ -76,7 +83,7 @@ def main():
 	lambda_=LAMBDA
 	cxpb = 0.9
 	mutpb = 0.1
-	ngen=100
+	ngen=50
 	halloffame = hof
 	verbose = True
 
