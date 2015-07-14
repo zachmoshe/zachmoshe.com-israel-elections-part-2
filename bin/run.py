@@ -5,6 +5,8 @@ import itertools
 import operator
 import random 
 import pickle
+import logging 
+
 
 import sklearn.cluster
 import sklearn.neighbors
@@ -16,6 +18,10 @@ from funcs import *
 from deap import algorithms, base, creator, tools
 #from scoop import futures
 import multiprocessing
+
+
+logging.basicConfig(filename='run.log', filemode='w', level=logging.DEBUG, format='%(asctime)s\t%(levelname)s\t%(message)s')
+
 
 
 LAT_LONG_RESULTS_FILENAME = "data/results_latlong.pickle"
@@ -201,6 +207,7 @@ def varOr(population, toolbox, lambda_, cxpb, mutpb):
 
 
 def evalAssignment(assignment, X, num_clusters):
+	logging.debug("evaluating %s", assignment)
 	# needs X
 	x = X.copy()
 	x['cluster_id'] = list(assignment)
@@ -240,6 +247,7 @@ def next_cluster_id(ind):
 	return new_cluster_id
 	
 def mateAssignments(ind1, ind2, X, num_clusters):
+	logging.debug("mating %s and %s", ind1, ind2)
 	# needs: X, num_clusters
 	# generate ordered list of 'connections'
 	conns1 = generateConnectionList(ind1, X).iterrows()
@@ -292,6 +300,7 @@ def mateAssignments(ind1, ind2, X, num_clusters):
 
 
 def mutateAssignment(ind, indpb, num_clusters):
+	logging.debug("mutating %s", ind)
 	# needs mutpb, num_clusters
 	
 	for i in range(len(ind)):
