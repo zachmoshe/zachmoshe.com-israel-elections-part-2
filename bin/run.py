@@ -57,8 +57,8 @@ def main():
 	toolbox.register("evaluate", evalAssignment, X=X, num_clusters=NUM_CLUSTERS)
 	toolbox.register("mate", mateAssignments, X=X, num_clusters=NUM_CLUSTERS)
 	toolbox.register("mutate", mutateAssignment, indpb=0.05, num_clusters=NUM_CLUSTERS)
-	toolbox.register("select", tools.selTournament, tournsize=3)
-
+	#toolbox.register("select", tools.selTournament, tournsize=3)
+	toolbox.register("select", select, num_best=int(MU+LAMBDA/10), tournsize=3)
 
 	# Run the algorithm
 	print("generating population...")
@@ -146,6 +146,10 @@ def main():
 	
 
 # DEAP functions
+
+def select(population, k, num_best, tournsize):
+	return tools.selBest(population, num_best) + tools.selTournament(population, k, tournsize=tournsize)
+
 
 def varOr(population, toolbox, lambda_, cxpb, mutpb):
 	"""Part of an evolutionary algorithm applying only the variation part
