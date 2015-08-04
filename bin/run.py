@@ -55,7 +55,7 @@ def main():
 	toolbox.register("population", tools.initRepeat, list, toolbox.individual, n=MU)
 
 	toolbox.register("evaluate", evalAssignment, X=X, num_clusters=NUM_CLUSTERS)
-	toolbox.register("mate", mateAssignments, X=X, num_clusters=NUM_CLUSTERS)
+	toolbox.register("mate", mateAssignmentsSorted, X=X, num_clusters=NUM_CLUSTERS)
 	toolbox.register("mutate", mutateAssignment, indpb=0.05, num_clusters=NUM_CLUSTERS)
 	#toolbox.register("select", tools.selTournament, tournsize=3)
 	toolbox.register("select", select, num_best=int(MU+LAMBDA/10), tournsize=3)
@@ -74,7 +74,7 @@ def main():
 	stats.register("max", np.max)
 	stats.register("list", list)
 	stats.register("num_uniq", lambda pop: len(set([ str(x) for x in pop])) )
-		
+
 
 	print("Starting the algorithm")
 	#pop, logbook = algorithms.eaSimple(pop, toolbox, cxpb=0.75, mutpb=0.1, ngen=5, stats=stats, halloffame=hof, verbose=True)
@@ -140,15 +140,15 @@ def main():
 		if verbose:
 			print(logbook.stream)
 
-	
+
 	pickle.dump({ "pop": pop, "logbook": logbook, "hof": hof }, open('results.pickle', 'wb'))
 
-	
+
 
 # DEAP functions
 
 def select(population, k, num_best, tournsize):
-	return tools.selBest(population, num_best) + tools.selTournament(population, k, tournsize=tournsize)
+	return tools.selBest(population, num_best) + tools.selTournament(population, k-num_best, tournsize=tournsize)
 
 
 def varOr(population, toolbox, lambda_, cxpb, mutpb):
@@ -158,13 +158,13 @@ def varOr(population, toolbox, lambda_, cxpb, mutpb):
 	population is independent of the input population.
 	:param population: A list of individuals to vary.
 	:param toolbox: A :class:`~deap.base.Toolbox` that contains the evolution
-									operators.
+	operators.
 	:param lambda\_: The number of children to produce
 	:param cxpb: The probability of mating two individuals.
 	:param mutpb: The probability of mutating an individual.
 	:returns: The final population
 	:returns: A class:`~deap.tools.Logbook` with the statistics of the
-						evolution
+	evolution
 	The variation goes as follow. On each of the *lambda_* iteration, it
 	selects one of the three operations; crossover, mutation or reproduction.
 	In the case of a crossover, two individuals are selected at random from
@@ -184,7 +184,7 @@ def varOr(population, toolbox, lambda_, cxpb, mutpb):
 	1 - *cxpb* - *mutpb*.
 	"""
 	assert (cxpb + mutpb) <= 1.0, ("The sum of the crossover and mutation "
-																 "probabilities must be smaller or equal to 1.0.")
+		"probabilities must be smaller or equal to 1.0.")
 
 	offspring = []
 	for i in range(lambda_):
@@ -224,9 +224,9 @@ def calculate_connections(rows):
 		rows.groupby("cluster_id").score.mean(),
 		on="cluster_id",
 		rsuffix="_cluster"
-	)
+		)
 	rows['weighted_score'] = punishment_factor(rows.pct_neig_same_cluster) * (rows.score - rows.score_cluster)**2
-	
+
 	cross = calculate_cross(rows)
 	cross = cross[cross.index_x < cross.index_y]
 	res = cross[["index_x", "index_y"]]
@@ -239,17 +239,17 @@ def generateConnectionList(ind, X):
 	x['cluster_id'] = list(ind)
 	conns = x.groupby("cluster_id").apply(
 		lambda rows: 
-			calculate_connections(rows)
-	)
+		calculate_connections(rows)
+		)
 	return conns.sort("diff").reset_index()[conns.columns.get_level_values(0)]
 
-	
+
 def next_cluster_id(ind):
 	new_cluster_id = ind.max() + 1
 	if np.isnan(new_cluster_id): 
 		new_cluster_id = 0
-	return new_cluster_id
-	
+	return int(new_cluster_id)
+
 def mateAssignments(ind1, ind2, X, num_clusters):
 	logging.debug("mating %s and %s", ind1, ind2)
 	# needs: X, num_clusters
@@ -294,11 +294,54 @@ def mateAssignments(ind1, ind2, X, num_clusters):
 							new_ind[index_y] = new_ind[index_x]
 						else:
 							new_ind[index_x] = new_ind[index_y]
-									
+
 	# fill nans with unused cluster_ids
 	leftovers = list(range(next_cluster_id(new_ind), num_clusters))[:sum(new_ind.isnull())]
 	new_ind[new_ind.isnull()][:len(leftovers)] = leftovers
 	new_ind[new_ind.isnull()] = np.random.randint(num_clusters, size=sum(new_ind.isnull()))
+
+	return creator.Individual(new_ind), creator.Individual(new_ind)
+
+
+def mateAssignmentsSorted(ind1, ind2, X, num_clusters):
+	# needs: X, num_clusters
+	# generate ordered list of 'connections'
+	conns1 = generateConnectionList(ind1, X)
+	conns2 = generateConnectionList(ind2, X)
+
+	all_conns = conns1.append(conns2, ignore_index = True).iterrows()
+
+	# iterate both alternately, adding connections and forming the new assignment
+	new_ind = pd.Series(index=X.index)
+
+	while new_ind.isnull().any() or len(new_ind[new_ind.notnull()].unique()) > num_clusters:
+		conn = next(all_conns, None)
+		if conn is None:
+			break            
+
+		conn = conn[1]
+		index_x = conn["index_x"]
+		index_y = conn["index_y"]
+
+		if np.isnan(new_ind[index_x]) or new_ind[index_x] != new_ind[index_y]: 
+			if np.isnan(new_ind[index_x]) and np.isnan(new_ind[index_y]):
+				# both are not assigned yet. assigning both to a new cluster
+				new_cluster_id = next_cluster_id(new_ind)
+				new_ind[[index_x, index_y]] = int(new_cluster_id)
+
+			elif not np.isnan(new_ind[index_x]) and not np.isnan(new_ind[index_y]):
+				# in two different clusters. combine them to one
+				new_ind[new_ind==new_ind[index_y]] = new_ind[index_x]
+
+			elif not np.isnan(new_ind[index_x]): 
+				new_ind[index_y] = new_ind[index_x]
+			else:
+				new_ind[index_x] = new_ind[index_y]
+
+	# fill nans with unused cluster_ids
+	leftovers = list(range(next_cluster_id(new_ind), num_clusters))[:int(sum(new_ind.isnull()))]
+	new_ind[new_ind.isnull()][:len(leftovers)] = leftovers
+	new_ind[new_ind.isnull()] = np.random.randint(num_clusters, size=int(sum(new_ind.isnull())))
 
 	return creator.Individual(new_ind), creator.Individual(new_ind)
 
@@ -310,9 +353,9 @@ def mutateAssignment(ind, indpb, num_clusters):
 	for i in range(len(ind)):
 		if random.random() < indpb:
 			ind[i] = random.randint(0,num_clusters)
-	
+
 	return ind,
-	
+
 if __name__ == "__main__":
 	main()    
 
