@@ -6,7 +6,7 @@ import operator
 import random 
 import pickle
 import logging 
-
+import functools
 
 import sklearn.cluster
 import sklearn.neighbors
@@ -40,6 +40,7 @@ kmeans_ind = km.fit_predict(X)
 MU = 100
 LAMBDA = 50
 
+
 def main():
 	# Register everything
 	creator.create("FitnessMin", base.Fitness, weights=(-1.0,))
@@ -59,6 +60,7 @@ def main():
 	toolbox.register("mutate", mutateAssignment, indpb=0.05, num_clusters=NUM_CLUSTERS)
 	#toolbox.register("select", tools.selTournament, tournsize=3)
 	toolbox.register("select", select, num_best=int(MU+LAMBDA/10), tournsize=3)
+
 
 	# Run the algorithm
 	print("generating population...")
@@ -89,7 +91,7 @@ def main():
 	lambda_=LAMBDA
 	cxpb = 0.9
 	mutpb = 0.1
-	ngen=50
+	ngen=100
 	halloffame = hof
 	verbose = True
 
@@ -309,7 +311,7 @@ def mateAssignmentsSorted(ind1, ind2, X, num_clusters):
 	conns1 = generateConnectionList(ind1, X)
 	conns2 = generateConnectionList(ind2, X)
 
-	all_conns = conns1.append(conns2, ignore_index = True).iterrows()
+	all_conns = conns1.append(conns2, ignore_index = True).sort("diff").iterrows()
 
 	# iterate both alternately, adding connections and forming the new assignment
 	new_ind = pd.Series(index=X.index)

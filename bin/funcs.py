@@ -45,8 +45,8 @@ def weighted_avg_std(X, num_clusters):
     ).mean()
     
     sizes = X.groupby("cluster_id").size()
-    
-    if sum(sizes >= 1/num_clusters/2) < num_clusters:
+
+    if sum(sizes >= X.shape[0]/num_clusters/2) < num_clusters:
         return 99999999 # a lot.
     else:
         return weighted_std
