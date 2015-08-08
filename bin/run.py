@@ -193,7 +193,7 @@ def varOr(population, toolbox, lambda_, cxpb, mutpb):
 		# print("varOr: {}".format(i))
 		op_choice = random.random()
 		if op_choice < cxpb:            # Apply crossover
-			ind1, ind2 = map(toolbox.clone, random.sample(population, 2))
+			ind1, ind2 = toolbox.map(toolbox.clone, random.sample(population, 2))
 			# print("crossover: {} , {}".format(ind1,ind2))
 			ind1, ind2 = toolbox.mate(ind1, ind2)
 			del ind1.fitness.values
