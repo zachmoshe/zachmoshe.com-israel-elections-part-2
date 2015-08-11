@@ -60,7 +60,7 @@ def main():
 	toolbox.register("mate", mateAssignmentsSorted, X=X, num_clusters=NUM_CLUSTERS)
 	toolbox.register("mutate", mutateAssignment, indpb=0.05, num_clusters=NUM_CLUSTERS)
 	#toolbox.register("select", tools.selTournament, tournsize=3)
-	toolbox.register("select", select, num_best=int(MU+LAMBDA/10), tournsize=3)
+	toolbox.register("select", select, num_best=int((MU+LAMBDA)/10), tournsize=3)
 
 
 	# Run the algorithm
@@ -119,7 +119,7 @@ def main():
 		# print("new gen. generate offspring...")
 		#offspring = varOr(population, toolbox, lambda_, cxpb, mutpb)
 		offspring = varAnd(population, toolbox, cxpb, mutpb)
-		exit
+		
 		# Evaluate the individuals with an invalid fitness
 		invalid_ind = [ind for ind in offspring if not ind.fitness.valid]
 		# print("evaluate {} invalid individuals from {} offsprings".format(len(invalid_ind), len(offspring)))
@@ -135,7 +135,14 @@ def main():
 
 		# Select the next generation population
 		# print ("select {} individuals from pop+offspring as the new population".format(mu))
-		population[:] = toolbox.select(population + offspring, mu)
+		all_population = population + offspring
+		all_population_uniq = []
+		all_population_uniq_keys = {}
+		for ind in all_population:
+			if str(ind) not in all_population_uniq_keys: all_population_uniq.append(ind) 
+			all_population_uniq_keys[str(ind)] = 1
+
+		population[:] = toolbox.select(all_population_uniq, mu)
 
 		# Update the statistics with the new population
 		# print("record statistics...")
@@ -216,12 +223,15 @@ def varOr(population, toolbox, lambda_, cxpb, mutpb):
 
 def singleVarAnd(i, population, clone_func, mate_func, mutate_func, cxpb, mutpb):
 	offspring = [clone_func(ind) for ind in population[i:i+2]]
+	offspring_orig = [clone_func(ind) for ind in population[i:i+2]]
+
 	if len(offspring) < 2: return offspring
 
 	if random.random() < cxpb:
 		offspring[0], offspring[1] = mate_func(offspring[0], offspring[1])
 		del offspring[0].fitness.values, offspring[1].fitness.values
 
+	print("{} -> {}".format([x.fitness.values for x in offspring_orig], [evalAssignment(x, X, NUM_CLUSTERS) for x in offspring]))
 	return offspring
 	
 def varAnd(population, toolbox, cxpb, mutpb):
@@ -257,6 +267,7 @@ def varAnd(population, toolbox, cxpb, mutpb):
 	:math:`[0, 1]`.
 	"""
 
+	random.shuffle(population)
 	singleVarAndPartial = functools.partial(singleVarAnd, population=population,
 		clone_func=toolbox.clone, mate_func=toolbox.mate, mutate_func=toolbox.mutate, 
 		cxpb=cxpb, mutpb=mutpb)
@@ -412,9 +423,10 @@ def mateAssignmentsSorted(ind1, ind2, X, num_clusters):
 	new_ind[new_ind.isnull()][:len(leftovers)] = leftovers
 	new_ind[new_ind.isnull()] = np.random.randint(num_clusters, size=int(sum(new_ind.isnull())))
 
-	better_parent = ind1 if (ind1.fitness > ind2.fitness) else ind2
+	ind1 = creator.Individual(new_ind)
+	ind1_mut = mutateAssignment(creator.Individual(ind1), 0.1, num_clusters)[0]
 
-	return creator.Individual(new_ind), better_parent
+	return ind1, ind1_mut
 
 
 def mutateAssignment(ind, indpb, num_clusters):
