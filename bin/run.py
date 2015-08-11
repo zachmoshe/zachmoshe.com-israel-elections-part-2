@@ -216,6 +216,8 @@ def varOr(population, toolbox, lambda_, cxpb, mutpb):
 
 def singleVarAnd(i, population, clone_func, mate_func, mutate_func, cxpb, mutpb):
 	offspring = [clone_func(ind) for ind in population[i:i+2]]
+	if len(offspring) < 2 return offspring
+	
 	if random.random() < cxpb:
 		offspring[0], offspring[1] = mate_func(offspring[0], offspring[1])
 		del offspring[0].fitness.values, offspring[1].fitness.values
