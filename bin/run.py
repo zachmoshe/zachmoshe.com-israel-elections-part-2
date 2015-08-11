@@ -37,8 +37,8 @@ km = sklearn.cluster.KMeans(n_clusters=NUM_CLUSTERS)
 kmeans_ind = km.fit_predict(X)
 
 
-MU = 100
-LAMBDA = 50
+MU = 10
+LAMBDA = 5
 
 
 
@@ -60,7 +60,7 @@ def main():
 	toolbox.register("mate", mateAssignmentsSorted, X=X, num_clusters=NUM_CLUSTERS)
 	toolbox.register("mutate", mutateAssignment, indpb=0.05, num_clusters=NUM_CLUSTERS)
 	#toolbox.register("select", tools.selTournament, tournsize=3)
-	toolbox.register("select", select, num_best=int((MU+LAMBDA)/10), tournsize=3)
+	toolbox.register("select", select, num_best=int((MU+LAMBDA)/10), tournsize=2)
 
 
 	# Run the algorithm
@@ -159,7 +159,7 @@ def main():
 # DEAP functions
 
 def select(population, k, num_best, tournsize):
-	return tools.selBest(population, num_best) + tools.selTournament(population, k-num_best, tournsize=tournsize)
+	return tools.selBest(population, int(num_best)) + tools.selTournament(population, k-int(num_best), tournsize=tournsize)
 
 
 def singleVarOr(i, population, clone_func, mate_func, mutate_func, cxpb, mutpb):
@@ -231,7 +231,6 @@ def singleVarAnd(i, population, clone_func, mate_func, mutate_func, cxpb, mutpb)
 		offspring[0], offspring[1] = mate_func(offspring[0], offspring[1])
 		del offspring[0].fitness.values, offspring[1].fitness.values
 
-	print("{} -> {}".format([x.fitness.values for x in offspring_orig], [evalAssignment(x, X, NUM_CLUSTERS) for x in offspring]))
 	return offspring
 	
 def varAnd(population, toolbox, cxpb, mutpb):
