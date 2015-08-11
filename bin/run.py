@@ -41,6 +41,7 @@ MU = 100
 LAMBDA = 50
 
 
+
 def main():
 	# Register everything
 	creator.create("FitnessMin", base.Fitness, weights=(-1.0,))
@@ -116,8 +117,9 @@ def main():
 	for gen in range(1, ngen + 1):
 		# Vary the population
 		# print("new gen. generate offspring...")
-		offspring = varOr(population, toolbox, lambda_, cxpb, mutpb)
-
+		#offspring = varOr(population, toolbox, lambda_, cxpb, mutpb)
+		offspring = varAnd(population, toolbox, cxpb, mutpb)
+		exit
 		# Evaluate the individuals with an invalid fitness
 		invalid_ind = [ind for ind in offspring if not ind.fitness.valid]
 		# print("evaluate {} invalid individuals from {} offsprings".format(len(invalid_ind), len(offspring)))
@@ -152,6 +154,21 @@ def main():
 def select(population, k, num_best, tournsize):
 	return tools.selBest(population, num_best) + tools.selTournament(population, k-num_best, tournsize=tournsize)
 
+
+def singleVarOr(i, population, clone_func, mate_func, mutate_func, cxpb, mutpb):
+	op_choice = random.random()
+	if op_choice < cxpb:            # Apply crossover
+		ind1, ind2 = map(clone_func, random.sample(population, 2))
+		ind1, ind2 = mate_func(ind1, ind2)
+		del ind1.fitness.values
+		return ind1
+	elif op_choice < cxpb + mutpb:  # Apply mutation
+		ind = clone_func(random.choice(population))
+		ind, = mutate_func(ind)
+		del ind.fitness.values
+		return ind
+	else:                           # Apply reproduction
+		return random.choice(population)
 
 def varOr(population, toolbox, lambda_, cxpb, mutpb):
 	"""Part of an evolutionary algorithm applying only the variation part
@@ -188,29 +205,77 @@ def varOr(population, toolbox, lambda_, cxpb, mutpb):
 	assert (cxpb + mutpb) <= 1.0, ("The sum of the crossover and mutation "
 		"probabilities must be smaller or equal to 1.0.")
 
-	offspring = []
-	for i in range(lambda_):
-		# print("varOr: {}".format(i))
-		op_choice = random.random()
-		if op_choice < cxpb:            # Apply crossover
-			ind1, ind2 = toolbox.map(toolbox.clone, random.sample(population, 2))
-			# print("crossover: {} , {}".format(ind1,ind2))
-			ind1, ind2 = toolbox.mate(ind1, ind2)
-			del ind1.fitness.values
-			offspring.append(ind1)
-		elif op_choice < cxpb + mutpb:  # Apply mutation
-			# print ("mutation")
-			ind = toolbox.clone(random.choice(population))
-			ind, = toolbox.mutate(ind)
-			del ind.fitness.values
-			offspring.append(ind)
-		else:                           # Apply reproduction
-			# print("reproduction")
-			offspring.append(random.choice(population))
+
+	singleVarOrPartial = functools.partial(singleVarOr,  population=population,
+		clone_func=toolbox.clone, mate_func=toolbox.mate, mutate_func=toolbox.mutate, 
+		cxpb=cxpb, mutpb=mutpb)
+	offspring = toolbox.map(singleVarOrPartial, range(lambda_))
 
 	return offspring
 
 
+def singleVarAnd(i, population, clone_func, mate_func, mutate_func, cxpb, mutpb):
+	offspring = [clone_func(ind) for ind in population[i:i+2]]
+	if random.random() < cxpb:
+		offspring[0], offspring[1] = mate_func(offspring[0], offspring[1])
+		del offspring[0].fitness.values, offspring[1].fitness.values
+
+	return offspring
+	
+def varAnd(population, toolbox, cxpb, mutpb):
+	"""Part of an evolutionary algorithm applying only the variation part
+	(crossover **and** mutation). The modified individuals have their
+	fitness invalidated. The individuals are cloned so returned population is
+	independent of the input population.
+	:param population: A list of individuals to vary.
+	:param toolbox: A :class:`~deap.base.Toolbox` that contains the evolution
+									operators.
+	:param cxpb: The probability of mating two individuals.
+	:param mutpb: The probability of mutating an individual.
+	:returns: A list of varied individuals that are independent of their
+						parents.
+	The variation goes as follow. First, the parental population
+	:math:`P_\mathrm{p}` is duplicated using the :meth:`toolbox.clone` method
+	and the result is put into the offspring population :math:`P_\mathrm{o}`.
+	A first loop over :math:`P_\mathrm{o}` is executed to mate pairs of consecutive
+	individuals. According to the crossover probability *cxpb*, the
+	individuals :math:`\mathbf{x}_i` and :math:`\mathbf{x}_{i+1}` are mated
+	using the :meth:`toolbox.mate` method. The resulting children
+	:math:`\mathbf{y}_i` and :math:`\mathbf{y}_{i+1}` replace their respective
+	parents in :math:`P_\mathrm{o}`. A second loop over the resulting
+	:math:`P_\mathrm{o}` is executed to mutate every individual with a
+	probability *mutpb*. When an individual is mutated it replaces its not
+	mutated version in :math:`P_\mathrm{o}`. The resulting
+	:math:`P_\mathrm{o}` is returned.
+	This variation is named *And* beceause of its propention to apply both
+	crossover and mutation on the individuals. Note that both operators are
+	not applied systematicaly, the resulting individuals can be generated from
+	crossover only, mutation only, crossover and mutation, and reproduction
+	according to the given probabilities. Both probabilities should be in
+	:math:`[0, 1]`.
+	"""
+
+	singleVarAndPartial = functools.partial(singleVarAnd, population=population,
+		clone_func=toolbox.clone, mate_func=toolbox.mate, mutate_func=toolbox.mutate, 
+		cxpb=cxpb, mutpb=mutpb)
+
+	offspring_pairs = toolbox.map(singleVarAndPartial, range(0, len(population), 2))
+	offspring = [item for sublist in offspring_pairs for item in sublist]
+
+	# offspring = [toolbox.clone(ind) for ind in population]
+
+	# # Apply crossover and mutation on the offspring
+	# for i in range(1, len(offspring), 2):
+	# 		if random.random() < cxpb:
+	# 				offspring[i - 1], offspring[i] = toolbox.mate(offspring[i - 1], offspring[i])
+	# 				del offspring[i - 1].fitness.values, offspring[i].fitness.values
+
+	for i in range(len(offspring)):
+			if random.random() < mutpb:
+					offspring[i], = toolbox.mutate(offspring[i])
+					del offspring[i].fitness.values
+
+	return offspring
 
 def evalAssignment(assignment, X, num_clusters):
 	logging.debug("evaluating %s", assignment)
@@ -345,7 +410,9 @@ def mateAssignmentsSorted(ind1, ind2, X, num_clusters):
 	new_ind[new_ind.isnull()][:len(leftovers)] = leftovers
 	new_ind[new_ind.isnull()] = np.random.randint(num_clusters, size=int(sum(new_ind.isnull())))
 
-	return creator.Individual(new_ind), creator.Individual(new_ind)
+	better_parent = ind1 if (ind1.fitness > ind2.fitness) else ind2
+
+	return creator.Individual(new_ind), better_parent
 
 
 def mutateAssignment(ind, indpb, num_clusters):
