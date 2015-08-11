@@ -37,8 +37,8 @@ km = sklearn.cluster.KMeans(n_clusters=NUM_CLUSTERS)
 kmeans_ind = km.fit_predict(X)
 
 
-MU = 10
-LAMBDA = 5
+MU = 100
+LAMBDA = 50
 
 
 
