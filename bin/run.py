@@ -38,7 +38,7 @@ kmeans_ind = km.fit_predict(X)
 
 
 MU = 100
-LAMBDA = 50
+LAMBDA = 100
 
 
 
@@ -58,9 +58,9 @@ def main():
 
 	toolbox.register("evaluate", evalAssignment, X=X, num_clusters=NUM_CLUSTERS)
 	toolbox.register("mate", mateAssignmentsSorted, X=X, num_clusters=NUM_CLUSTERS)
-	toolbox.register("mutate", mutateAssignment, indpb=0.05, num_clusters=NUM_CLUSTERS)
+	toolbox.register("mutate", mutateAssignment, indpb=0.005, num_clusters=NUM_CLUSTERS)
 	#toolbox.register("select", tools.selTournament, tournsize=3)
-	toolbox.register("select", select, num_best=int((MU+LAMBDA)/10), tournsize=2)
+	toolbox.register("select", select, num_best=int((MU+LAMBDA)/2), tournsize=2)
 
 
 	# Run the algorithm
@@ -117,8 +117,8 @@ def main():
 	for gen in range(1, ngen + 1):
 		# Vary the population
 		# print("new gen. generate offspring...")
-		#offspring = varOr(population, toolbox, lambda_, cxpb, mutpb)
-		offspring = varAnd(population, toolbox, cxpb, mutpb)
+		offspring = varOr(population, toolbox, lambda_, cxpb, mutpb)
+		#offspring = varAnd(population, toolbox, cxpb, mutpb)
 		
 		# Evaluate the individuals with an invalid fitness
 		invalid_ind = [ind for ind in offspring if not ind.fitness.valid]
@@ -152,7 +152,7 @@ def main():
 			print(logbook.stream)
 
 
-	pickle.dump({ "pop": pop, "logbook": logbook, "hof": hof }, open('results.pickle', 'wb'))
+	pickle.dump({ "pop": pop, "logbook": logbook, "hof": hof }, open('results/results.pickle', 'wb'))
 
 
 
@@ -273,14 +273,6 @@ def varAnd(population, toolbox, cxpb, mutpb):
 
 	offspring_pairs = toolbox.map(singleVarAndPartial, range(0, len(population), 2))
 	offspring = [item for sublist in offspring_pairs for item in sublist]
-
-	# offspring = [toolbox.clone(ind) for ind in population]
-
-	# # Apply crossover and mutation on the offspring
-	# for i in range(1, len(offspring), 2):
-	# 		if random.random() < cxpb:
-	# 				offspring[i - 1], offspring[i] = toolbox.mate(offspring[i - 1], offspring[i])
-	# 				del offspring[i - 1].fitness.values, offspring[i].fitness.values
 
 	for i in range(len(offspring)):
 			if random.random() < mutpb:
@@ -423,7 +415,7 @@ def mateAssignmentsSorted(ind1, ind2, X, num_clusters):
 	new_ind[new_ind.isnull()] = np.random.randint(num_clusters, size=int(sum(new_ind.isnull())))
 
 	ind1 = creator.Individual(new_ind)
-	ind1_mut = mutateAssignment(creator.Individual(ind1), 0.1, num_clusters)[0]
+	ind1_mut = mutateAssignment(creator.Individual(ind1), 0.01, num_clusters)[0]
 
 	return ind1, ind1_mut
 
