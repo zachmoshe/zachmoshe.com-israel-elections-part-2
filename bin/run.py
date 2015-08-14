@@ -68,7 +68,7 @@ def main():
 	#pop = toolbox.population()
 	pop = [ creator.Individual(kmeans_ind) ] * (MU-1)
 	pop = [ creator.Individual(kmeans_ind) ] + [ toolbox.mutate(toolbox.clone(ind))[0] for ind in pop ]
-
+	
 	hof = tools.HallOfFame(10)
 
 	stats = tools.Statistics(lambda ind: ind.fitness.values)
@@ -92,7 +92,7 @@ def main():
 	lambda_=LAMBDA
 	cxpb = 0.9
 	mutpb = 0.1
-	ngen=100
+	ngen=500
 	halloffame = hof
 	verbose = True
 
@@ -152,7 +152,7 @@ def main():
 			print(logbook.stream)
 
 
-	pickle.dump({ "pop": pop, "logbook": logbook, "hof": hof }, open('results/results.pickle', 'wb'))
+	pickle.dump({ "pop": pop, "logbook": logbook, "hof": hof, history: history}, open('results/results.pickle', 'wb'))
 
 
 
