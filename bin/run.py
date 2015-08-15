@@ -152,7 +152,7 @@ def main():
 			print(logbook.stream)
 
 
-	pickle.dump({ "pop": pop, "logbook": logbook, "hof": hof, history: history}, open('results/results.pickle', 'wb'))
+	pickle.dump({ "pop": pop, "logbook": logbook, "hof": hof }, open('results/results.pickle', 'wb'))
 
 
 
