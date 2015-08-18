@@ -30,15 +30,15 @@ RESULTS_LATLONG = pickle.load(open(LAT_LONG_RESULTS_FILENAME, "rb"))
 NUM_CLUSTERS = 8
 X = RESULTS_LATLONG[-1]["X"]
 
-X = X[:50]
+X = X[:500]
 
 # init with KMeans
 km = sklearn.cluster.KMeans(n_clusters=NUM_CLUSTERS)
 kmeans_ind = km.fit_predict(X)
 
 
-MU = 10
-LAMBDA = 10
+MU = 100
+LAMBDA = 100
 
 
 
