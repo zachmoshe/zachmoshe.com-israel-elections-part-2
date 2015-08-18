@@ -30,15 +30,15 @@ RESULTS_LATLONG = pickle.load(open(LAT_LONG_RESULTS_FILENAME, "rb"))
 NUM_CLUSTERS = 8
 X = RESULTS_LATLONG[-1]["X"]
 
-X = X[:500]
+X = X[:50]
 
 # init with KMeans
 km = sklearn.cluster.KMeans(n_clusters=NUM_CLUSTERS)
 kmeans_ind = km.fit_predict(X)
 
 
-MU = 100
-LAMBDA = 100
+MU = 10
+LAMBDA = 10
 
 
 
@@ -148,7 +148,7 @@ def main():
 		logbook.record(gen=gen, nevals=len(invalid_ind), **record)
 		if verbose:
 			print(logbook.stream)
-			print("HOF[0]: ({}) {}".format(str(abs(hash(str(list(halloffame[0])))))[:10]), halloffame[0])
+			print("HOF[0]: (#{}) ({}) {}".format( str(abs(hash(str(list(halloffame[0])))))[:10],  halloffame[0].fitness, halloffame[0]) )
 
 
 	pickle.dump({ "pop": pop, "logbook": logbook, "hof": halloffame }, open('results/results.pickle', 'wb'))
