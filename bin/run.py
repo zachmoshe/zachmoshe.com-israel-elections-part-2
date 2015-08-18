@@ -148,7 +148,7 @@ def main():
 		logbook.record(gen=gen, nevals=len(invalid_ind), **record)
 		if verbose:
 			print(logbook.stream)
-			print("HOF[0]: ({}) {}".format(str(abs(hash(list(halloffame[0]))))[:10]), halloffame[0])
+			print("HOF[0]: ({}) {}".format(str(abs(hash(str(list(halloffame[0])))))[:10]), halloffame[0])
 
 
 	pickle.dump({ "pop": pop, "logbook": logbook, "hof": halloffame }, open('results/results.pickle', 'wb'))
