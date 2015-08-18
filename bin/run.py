@@ -69,7 +69,7 @@ def main():
 	pop = [ creator.Individual(kmeans_ind) ] * (MU-1)
 	pop = [ creator.Individual(kmeans_ind) ] + [ toolbox.mutate(toolbox.clone(ind))[0] for ind in pop ]
 	
-	hof = tools.HallOfFame(10)
+	halloffame = tools.HallOfFame(10)
 
 	stats = tools.Statistics(lambda ind: ind.fitness.values)
 	stats.register("avg", np.mean)
@@ -93,7 +93,6 @@ def main():
 	cxpb = 0.9
 	mutpb = 0.1
 	ngen=500
-	halloffame = hof
 	verbose = True
 
 	logbook = tools.Logbook()
@@ -128,11 +127,6 @@ def main():
 		for ind, fit in zip(invalid_ind, fitnesses):
 			ind.fitness.values = fit
 
-		# Update the hall of fame with the generated individuals
-		# print ("updating hof...")
-		if halloffame is not None:
-			halloffame.update(offspring)
-
 		# Select the next generation population
 		# print ("select {} individuals from pop+offspring as the new population".format(mu))
 		all_population = population + offspring
@@ -144,15 +138,20 @@ def main():
 
 		population[:] = toolbox.select(all_population_uniq, mu)
 
+		# Update the hall of fame with the generated individuals
+		if halloffame is not None:
+			halloffame.update(population)
+
 		# Update the statistics with the new population
 		# print("record statistics...")
 		record = stats.compile(population) if stats is not None else {}
 		logbook.record(gen=gen, nevals=len(invalid_ind), **record)
 		if verbose:
 			print(logbook.stream)
+			print("HOF[0]: ({}) {}".format(str(abs(hash(halloffame[0])))[:10]), halloffame[0])
 
 
-	pickle.dump({ "pop": pop, "logbook": logbook, "hof": hof }, open('results/results.pickle', 'wb'))
+	pickle.dump({ "pop": pop, "logbook": logbook, "hof": halloffame }, open('results/results.pickle', 'wb'))
 
 
 
